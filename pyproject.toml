@@ -1,0 +1,20 @@
+[project]
+name = "data-warehouse-framework"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12.8"
+dependencies = [
+    "fire>=0.7.1",
+    "pyyaml>=6.0.3",
+    "typer>=0.20.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.8",
+]
+
+[tool.ruff]
+# 设置全局选项
+line-length = 128 # 行长度限制

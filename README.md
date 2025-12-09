@@ -1,21 +1,27 @@
-# data-process-framework
+# Data-Warehouse-Framework
+
 framework
 
-/config/  
-/config/.env   
-/config/settings.py   
-/core/operater/BaseOperater.py(抽象类)  
-/core/operater/HiveOperater.py(继承)  
-/core/operater/ImpalaOperater.py  
-/core/operater/MysqlOperater.py  
-/util/Logger.py  
-/util/DateTime.py  
-...  
+## Global default parameters
+
+yesterday=
+executor=hive
   
-  
-/data_warehouse/ods/TableName.py  
-/data_warehouse/dw/TableName.py  
-...  
-  
-## dependency
+## Dependency
+
 pip install python-dotenv
+
+## Usage
+
+```shell
+python main.py
+python main.py --help
+python main.py --version
+python main.py warehouse
+python main.py warehouse dim_date
+python main.py warehouse dim_date start_date=2010-01-01 end_date=2029-12-31
+python main.py warehouse ods_yb_master_info 
+python main.py utils to_excel --sql="select * from dim_date" -o output/dim_date.xlsx  --verbose
+python main.py utils get_schema
+python main.py utils get_schema dim
+```
