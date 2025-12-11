@@ -10,14 +10,15 @@ class MySQLExecutor(BaseExecutor):
 
     def connect(self) -> bool:
         try:
-            # import mysql.connector
-            # self.connection = mysql.connector.connect(
-            #     host=self.config['host'],
-            #     port=self.config['port'],
-            #     user=self.config['user'],
-            #     password=self.config['password'],
-            #     database=self.config['database']
-            # )
+            import mysql.connector
+
+            self.connection = mysql.connector.connect(
+                host=self.config["host"],
+                port=self.config["port"],
+                user=self.config["user"],
+                password=self.config["password"],
+                database=self.config["database"],
+            )
             typer.echo(f"🔗 连接MySQL: {self.config['host']}:{self.config['port']}")
             return True
         except Exception as e:

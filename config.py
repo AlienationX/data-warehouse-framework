@@ -1,6 +1,20 @@
+import os
+from collections import ChainMap
 from pathlib import Path
 
 import yaml
+from decouple import Config, RepositoryEnv
+
+# 读取环境变量，没有设置时，默认使用prod环境。本机设置为dev：export DWF_ENV=dev
+# vim ~/.bash_profile
+# export DWF_ENV=dev
+ENV = os.getenv("DWF_ENV", "prod")
+config = Config(ChainMap(RepositoryEnv(f".env.{ENV}"), RepositoryEnv(".env")))
+
+# print("*" * 20, config)
+# print("*" * 20, config.repository)
+# print("*" * 20, config("DEBUG"))
+# print("*" * 20, config("SECRET_KEY"))
 
 
 class Config:
@@ -11,36 +25,42 @@ class Config:
         self.executors = {
             "hive": {
                 "class": "executor.hive_executor.HiveExecutor",
-                "config": {"host": "localhost", "port": 10000, "database": "default"},
+                "config": {
+                    "host": config("HIVE_HOST", default="localhost"),
+                    "port": config("HIVE_PORT", default=10000, cast=int),
+                    "database": config("HIVE_DBNAME", default="default"),
+                    "user": config("HIVE_USER", default="hive_user"),
+                    "password": config("HIVE_PASSWORD", default="hive_password"),
+                },
             },
             "spark": {
                 "class": "executor.hive_executor.SparkExecutor",
                 "config": {
-                    "host": "localhost",
-                    "port": 10000,
-                    "database": "default",
-                    "user": "spark_user",
-                    "password": "spark_password",
+                    "host": config("SPARK_HOST", default="localhost"),
+                    "port": config("SPARK_PORT", default=10000, cast=int),
+                    "database": config("SPARK_DBNAME", default="default"),
+                    "user": config("SPARK_USER", default="spark_user"),
+                    "password": config("SPARK_PASSWORD", default="spark_password"),
                 },
             },
             "mysql": {
                 "class": "executor.mysql_executor.MySQLExecutor",
                 "config": {
-                    "host": "localhost",
-                    "port": 3306,
-                    "database": "data_warehouse",
-                    "user": "root",
-                    "password": "password",
+                    "host": config("MYSQL_HOST", default="localhost"),
+                    "port": config("MYSQL_PORT", default=3306, cast=int),
+                    "database": config("MYSQL_DBNAME", default="data_warehouse"),
+                    "user": config("MYSQL_USER", default="root"),
+                    "password": config("MYSQL_PASSWORD", default="password"),
                 },
             },
             "postgresql": {
                 "class": "executor.postgresql_executor.PostgreSQLExecutor",
                 "config": {
-                    "host": "localhost",
-                    "port": 5432,
-                    "database": "data_warehouse",
-                    "user": "postgres",
-                    "password": "password",
+                    "host": config("POSTGRESQL_HOST", default="localhost"),
+                    "port": config("POSTGRESQL_PORT", default=5432, cast=int),
+                    "database": config("POSTGRESQL_DBNAME", default="data_warehouse"),
+                    "user": config("POSTGRESQL_USER", default="postgres"),
+                    "password": config("POSTGRESQL_PASSWORD", default="password"),
                 },
             },
         }

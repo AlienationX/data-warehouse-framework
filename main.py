@@ -20,16 +20,15 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 
-# 任务加载器（指向 warehouse 根目录）
-task_loader = TaskLoader(Path("warehouse"))
 
 # 创建两个子应用（group），在 help 中加入简短描述与示例
 warehouse_app = typer.Typer(
     help=(
         "Warehouse 分类任务（对应 warehouse/ods | dw | dim 下的 .py 文件）。\n\n"
         "Examples:\n"
-        "  main.py warehouse ods_yb_master_info --executor mysql --dry-run --verbose\n\n"
-        "列出命令：\n  main.py warehouse --help"
+        "  python main.py warehouse ods_yb_master_info --executor mysql --dry-run --verbose\n\n"
+        "列出命令：\n"
+        "  python main.py warehouse --help"
     )
 )
 
@@ -47,16 +46,8 @@ app.add_typer(warehouse_app, name="warehouse")
 app.add_typer(utils_app, name="utils")
 
 
-@app.callback(invoke_without_command=True)
-def main_callback(ctx: typer.Context, version: bool = typer.Option(False, "-v", "--version", help="显示版本信息")):
-    """顶层回调：仅处理版本显示或欢迎信息"""
-    if version:
-        typer.echo(f"{APP_NAME} v{APP_VERSION}")
-        raise typer.Exit()
-
-    if ctx.invoked_subcommand is None:
-        typer.echo(f"欢迎使用 {APP_NAME} CLI 工具")
-        typer.echo("使用 --help 查看命令: warehouse, utils")
+# 任务加载器（指向 warehouse 根目录）
+task_loader = TaskLoader(Path("warehouse"))
 
 
 def execute_single_task(task_name: str, task_info: Dict[str, Any], params: Dict[str, Any], output_file: Optional[Path] = None):
@@ -71,6 +62,7 @@ def execute_single_task(task_name: str, task_info: Dict[str, Any], params: Dict[
 
         with ExecutorFactory.create_executor(executor_type, executor_config) as executor:
             task_obj = task_info["object"]
+            print("*" * 20, "task_obj", task_obj)
 
             if isinstance(task_obj, type):
                 task_instance = task_obj()
@@ -104,10 +96,12 @@ def execute_single_task(task_name: str, task_info: Dict[str, Any], params: Dict[
 
 # 动态注册 warehouse 下的所有任务作为命令
 warehouse_tasks = task_loader.discover_tasks(category="warehouse")
+print("*" * 20, "warehouse_tasks", warehouse_tasks)
 for task_name in sorted(warehouse_tasks.keys()):
     task_info = warehouse_tasks[task_name]
+    print("*" * 20, "task_info", task_info)
 
-    def create_warehouse_command(tn: str, ti: Dict[str, Any]):
+    def create_warehouse_command(task_name: str, task_info: Dict[str, Any]):
         """工厂函数创建具体任务命令"""
 
         def task_command(
@@ -132,7 +126,7 @@ for task_name in sorted(warehouse_tasks.keys()):
                 "verbose": verbose,
             }
 
-            final = {}
+            params = {}
             for k, dv in defaults.items():
                 if (
                     k in group_params
@@ -140,18 +134,19 @@ for task_name in sorted(warehouse_tasks.keys()):
                     and sub_params.get(k) == dv
                     and group_params.get(k) != dv
                 ):
-                    final[k] = group_params.get(k)
+                    params[k] = group_params.get(k)
                 else:
-                    final[k] = sub_params.get(k)
+                    params[k] = sub_params.get(k)
 
-            final["run_time"] = datetime.now().isoformat()
-            execute_single_task(tn, ti, final)
+            params["run_time"] = datetime.now().isoformat()
+            execute_single_task(task_name, task_info, params)
 
-        task_command.__doc__ = f"执行任务: {tn}"
-        task_command.__name__ = tn
+        task_command.__doc__ = f"执行任务: {task_name}"
+        task_command.__name__ = task_name
         return task_command
 
     warehouse_app.command(name=task_name)(create_warehouse_command(task_name, task_info))
+    # warehouse_app.command(name=task_name, help="xxxx")(create_warehouse_command(task_name, task_info))
 
 
 # 动态注册 utils 下的所有工具作为命令
@@ -159,7 +154,7 @@ utils_tasks = task_loader.discover_tasks(category="utils")
 for tool_name in sorted(utils_tasks.keys()):
     tool_info = utils_tasks[tool_name]
 
-    def create_utils_command(tn: str, ti: Dict[str, Any]):
+    def create_utils_command(tool_name: str, tool_info: Dict[str, Any]):
         """工厂函数创建具体工具命令"""
 
         def tool_command(
@@ -175,7 +170,7 @@ for tool_name in sorted(utils_tasks.keys()):
             defaults = {"output": None, "verbose": False}
             sub_params = {"output": str(output) if output else None, "verbose": verbose}
 
-            final = {}
+            params = {}
             for k, dv in defaults.items():
                 if (
                     k in group_params
@@ -183,15 +178,15 @@ for tool_name in sorted(utils_tasks.keys()):
                     and sub_params.get(k) == dv
                     and group_params.get(k) != dv
                 ):
-                    final[k] = group_params.get(k)
+                    params[k] = group_params.get(k)
                 else:
-                    final[k] = sub_params.get(k)
+                    params[k] = sub_params.get(k)
 
-            final["run_time"] = datetime.now().isoformat()
-            execute_single_task(tn, ti, final, Path(final["output"]) if final.get("output") else None)
+            params["run_time"] = datetime.now().isoformat()
+            execute_single_task(tool_name, tool_info, params, Path(params["output"]) if params.get("output") else None)
 
-        tool_command.__doc__ = f"执行工具: {tn}"
-        tool_command.__name__ = tn
+        tool_command.__doc__ = f"执行工具: {tool_name}"
+        tool_command.__name__ = tool_name
         return tool_command
 
     utils_app.command(name=tool_name)(create_utils_command(tool_name, tool_info))
@@ -235,6 +230,18 @@ def utils_group_callback(
         typer.echo("请使用 --help 查看可用的 utils 子命令和选项：\n")
         typer.echo(ctx.get_help())
         raise typer.Exit()
+
+
+@app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context, version: bool = typer.Option(False, "-v", "--version", help="显示版本信息")):
+    """顶层回调：仅处理版本显示或欢迎信息"""
+    if version:
+        typer.echo(f"{APP_NAME} v{APP_VERSION}")
+        raise typer.Exit()
+
+    if ctx.invoked_subcommand is None:
+        typer.echo(f"欢迎使用 {APP_NAME} CLI 工具")
+        typer.echo("使用 --help 查看命令: warehouse, utils")
 
 
 if __name__ == "__main__":

@@ -66,6 +66,7 @@ class TaskLoader:
                             "path": py_file,
                             "category": cat,
                         }
+                        print("*" * 20, "task_loader", "task", tasks)
 
                 except Exception:
                     pass
@@ -76,6 +77,7 @@ class TaskLoader:
         """从模块中提取任务对象"""
         # 优先查找类
         for name, obj in inspect.getmembers(module, inspect.isclass):
+            print("=" * 20, "inspect", "name", name, "obj", obj, "task_name", task_name)
             if name.lower().endswith("task"):
                 return obj
 

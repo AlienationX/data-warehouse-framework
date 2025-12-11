@@ -8,6 +8,19 @@ class Task(BaseTask):
         super().__init__()
         self.description = "日期维度表构建任务"
 
+    def create(self):
+        return """
+        CREATE TABLE IF NOT EXISTS dim.dim_date (
+            date_id INT PRIMARY KEY,
+            date_value DATE,
+            year INT,
+            month INT,
+            day INT,
+            quarter INT,
+            is_weekend BOOLEAN
+        )
+        """
+
     def get_sql_template(self) -> str:
         return """
         INSERT INTO dim.dim_date
